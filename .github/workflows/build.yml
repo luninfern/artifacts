@@ -5,36 +5,6 @@ on:
   pull_request:
 
 jobs:
-  linux-x86_64:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: |
-          sudo apt update
-          sudo apt install -y gcc libassimp-dev libglew-dev libsdl2-dev libsdl2-image-dev
-          gcc main.c -o demo-linux-x86_64 -lm -lassimp -lGL -lGLEW -lSDL2 -lSDL2_image
-      - uses: actions/upload-artifact@v4
-        with:
-          name: linux-x86_64
-          path: demo-linux-x86_64
-
-  linux-arm64:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
-      - run: |
-          docker run --rm --platform linux/arm64 \
-            -v "$PWD:/src" -w /src arm64v8/ubuntu:22.04 bash -c "\
-              apt update && \
-              apt install -y gcc libassimp-dev libglew-dev libsdl2-dev libsdl2-image-dev && \
-              gcc main.c -o demo-linux-arm64 -lm -lassimp -lGL -lGLEW -lSDL2 -lSDL2_image \
-            "
-      - uses: actions/upload-artifact@v4
-        with:
-          name: linux-arm64
-          path: demo-linux-arm64
-
   windows:
     runs-on: windows-latest
     steps:
@@ -48,7 +18,6 @@ jobs:
             git clone https://github.com/microsoft/vcpkg
             .\vcpkg\bootstrap-vcpkg.bat
           }
-          .\vcpkg\vcpkg integrate install
 
       - name: Cache vcpkg
         uses: actions/cache@v3
@@ -62,7 +31,7 @@ jobs:
 
       - name: Install dependencies
         shell: powershell
-        run: .\vcpkg\vcpkg install assimp sdl2 sdl2-image glew --triplet x64-windows-static
+        run: .\vcpkg\vcpkg install sdl2 sdl2-image glew --triplet x64-windows-static
     
       - name: List vcpkg libraries
         shell: powershell
@@ -81,25 +50,25 @@ jobs:
                   ForEach-Object { $_.FullName }
 
           $systemLibs = @(
-            "user32.lib",
-            "gdi32.lib",
-            "shell32.lib",
-            "ole32.lib",
-            "oleaut32.lib",
-            "advapi32.lib",
-            "winmm.lib",
-            "imm32.lib",
-            "version.lib",
-            "propsys.lib",
-            "setupapi.lib",
-            "cfgmgr32.lib",
-            "comdlg32.lib",
-            "shlwapi.lib",
-            "hid.lib",
-            "opengl32.lib",
-            "dinput8.lib",
-            "dxguid.lib",
-            "uuid.lib"
+              "user32.lib",
+              "gdi32.lib",
+              "shell32.lib",
+              "ole32.lib",
+              "oleaut32.lib",
+              "advapi32.lib",
+              "winmm.lib",
+              "imm32.lib",
+              "version.lib",
+              "propsys.lib",
+              "setupapi.lib",
+              "cfgmgr32.lib",
+              "comdlg32.lib",
+              "shlwapi.lib",
+              "hid.lib",
+              "opengl32.lib",
+              "dinput8.lib",
+              "dxguid.lib",
+              "uuid.lib"
           )
 
           $allLibs = $vcpkgLibs + $systemLibs
