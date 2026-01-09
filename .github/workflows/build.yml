@@ -82,7 +82,7 @@ jobs:
 
           $libPaths = ($libs | ForEach-Object { "`"$($_.FullName)`"" }) -join " "
 
-          cl /O2 /MT main.c `
+          cl /O2 /MD main.c `
              /I ".\vcpkg\installed\x64-windows-static\include" `
              /D GLEW_STATIC /D SDL_MAIN_HANDLED `
              /link `
