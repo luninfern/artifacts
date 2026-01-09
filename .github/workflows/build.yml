@@ -9,21 +9,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: |
+      - run: >
           sudo apt update
+
           sudo apt install -y gcc libassimp-dev libglew-dev libsdl2-dev libsdl2-image-dev
+
           gcc main.c -o demo-linux-x86_64 -lm -lassimp -lGL -lGLEW -lSDL2 -lSDL2_image
       - uses: actions/upload-artifact@v4
         with:
           name: linux-x86_64
           path: demo-linux-x86_64
-
   linux-arm64:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
-      - run: |
+      - run: >
           docker run --rm --platform linux/arm64 \
             -v "$PWD:/src" -w /src arm64v8/ubuntu:22.04 bash -c "\
               apt update && \
@@ -34,59 +35,57 @@ jobs:
         with:
           name: linux-arm64
           path: demo-linux-arm64
+windows:
+  runs-on: windows-latest
+  steps:
+    - uses: actions/checkout@v4
+    - uses: ilammy/msvc-dev-cmd@v1
+    - name: Cache vcpkg
+      id: cache-vcpkg
+      uses: actions/cache@v4
+      with:
+        path: vcpkg/installed
+        key: vcpkg-installed-${{ runner.os }}-x64-windows-static-${{
+          hashFiles('**/build.yml') }}
+        restore-keys: |
+          vcpkg-installed-${{ runner.os }}-x64-windows-static-
+    - name: Setup vcpkg
+      shell: powershell
+      run: |
+        if (-not (Test-Path "vcpkg")) {
+          git clone https://github.com/microsoft/vcpkg
+          .\vcpkg\bootstrap-vcpkg.bat
+        }
+    - name: Install dependencies
+      shell: powershell
+      run: >
+        .\vcpkg\vcpkg install assimp sdl2 sdl2-image glew --triplet
+        x64-windows-static
+    - name: Cache compiled binary
+      id: cache-binary
+      uses: actions/cache@v4
+      with:
+        path: demo-windows.exe
+        key: demo-windows-${{ hashFiles('**/main.c') }}
+        restore-keys: demo-windows-
+    - name: Build
+      shell: powershell
+      if: steps.cache-binary.outputs.cache-hit != 'true'
+      run: >
+        $libPath = (Resolve-Path ".\vcpkg\installed\x64-windows-static\lib").Path
 
-  windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
+        $includePath = (Resolve-Path ".\vcpkg\installed\x64-windows-static\include").Path
+        $libs = Get-ChildItem $libPath -Filter *.lib | ForEach-Object { $_.Name } | Sort-Object
+        $libString = [string]::Join(" ", $libs)
 
-      - uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Cache vcpkg
-        id: cache-vcpkg
-        uses: actions/cache@v4
-        with:
-          path: vcpkg/installed
-          key: vcpkg-installed-${{ runner.os }}-x64-windows-static-${{ hashFiles('**/build.yml') }}
-          restore-keys: |
-            vcpkg-installed-${{ runner.os }}-x64-windows-static-
-
-      - name: Setup vcpkg
-        shell: powershell
-        run: |
-          if (-not (Test-Path "vcpkg")) {
-            git clone https://github.com/microsoft/vcpkg
-            .\vcpkg\bootstrap-vcpkg.bat
-          }
-
-      - name: Install dependencies
-        shell: powershell
-        run: |
-          .\vcpkg\vcpkg install assimp sdl2 sdl2-image glew --triplet x64-windows-static
-
-      - name: Cache compiled binary
-        id: cache-binary
-        uses: actions/cache@v4
-        with:
-          path: demo-windows.exe
-          key: demo-windows-${{ hashFiles('**/main.c') }}
-          restore-keys: demo-windows-
-
-      - name: Build
-        shell: powershell
-        if: steps.cache-binary.outputs.cache-hit != 'true'
-        run: |
-          $libPath = (Resolve-Path ".\vcpkg\installed\x64-windows-static\lib").Path
-          $includePath = (Resolve-Path ".\vcpkg\installed\x64-windows-static\include").Path
-          cl /O2 /MT main.c `
-            /I $includePath `
-            /link `
-            /LIBPATH:$libPath `
-            assimp.lib SDL2.lib SDL2main.lib SDL2_image.lib glew32s.lib `
-            opengl32.lib user32.lib gdi32.lib winmm.lib `
-            /OUT:demo-windows.exe
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: windows
-          path: demo-windows.exe
+        cl /O2 /MT main.c `
+          /I $includePath `
+          /link `
+          /LIBPATH:$libPath `
+          $libString `
+          opengl32.lib user32.lib gdi32.lib winmm.lib `
+          /OUT:demo-windows.exe
+    - uses: actions/upload-artifact@v4
+      with:
+        name: windows
+        path: demo-windows.exe
