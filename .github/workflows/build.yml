@@ -9,12 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - run: |
           sudo apt update
           sudo apt install -y gcc libassimp-dev libglew-dev libsdl2-dev libsdl2-image-dev
           gcc main.c -o demo-linux-x86_64 -lm -lassimp -lGL -lGLEW -lSDL2 -lSDL2_image
-
       - uses: actions/upload-artifact@v4
         with:
           name: linux-x86_64
@@ -25,7 +23,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
-
       - run: |
           docker run --rm \
             --platform linux/arm64 \
@@ -37,7 +34,6 @@ jobs:
               apt install -y gcc libassimp-dev libglew-dev libsdl2-dev libsdl2-image-dev &&
               gcc main.c -o demo-linux-arm64 -lm -lassimp -lGL -lGLEW -lSDL2 -lSDL2_image
             "
-
       - uses: actions/upload-artifact@v4
         with:
           name: linux-arm64
@@ -47,36 +43,28 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
-      - uses: msys2/setup-msys2@v2
-        with:
-          install: >
-            mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-assimp
-            mingw-w64-x86_64-glew
-            mingw-w64-x86_64-SDL2
-            mingw-w64-x86_64-SDL2_image
-
-      - shell: msys2 {0}
+      - uses: microsoft/setup-msbuild@v2
+      - name: Install vcpkg deps (static)
         run: |
-          gcc main.c -o demo-windows.exe \
-            -lmingw32 \
-            -lSDL2main \
-            -lSDL2 \
-            -lSDL2_image \
-            -lglew32 \
-            -lopengl32 \
-            -lassimp \
-            -lm \
-            -luser32 \
-            -lgdi32 \
-            -lwinmm \
-            -limm32 \
-            -lole32 \
-            -loleaut32 \
-            -lversion \
-            -lsetupapi
-
+          git clone https://github.com/microsoft/vcpkg
+          cd vcpkg
+          bootstrap-vcpkg.bat
+          vcpkg install ^
+            assimp ^
+            sdl2 ^
+            sdl2-image ^
+            glew ^
+            --triplet x64-windows-static
+      - name: Build
+        shell: cmd
+        run: |
+          cl /O2 /MT main.c ^
+            /I vcpkg\installed\x64-windows-static\include ^
+            /link ^
+            /LIBPATH:vcpkg\installed\x64-windows-static\lib ^
+            assimp.lib SDL2.lib SDL2main.lib SDL2_image.lib glew32s.lib ^
+            opengl32.lib user32.lib gdi32.lib winmm.lib ^
+            /OUT:demo-windows.exe
       - uses: actions/upload-artifact@v4
         with:
           name: windows
