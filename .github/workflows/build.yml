@@ -54,12 +54,12 @@ jobs:
         shell: powershell
         run: .\vcpkg\vcpkg install assimp sdl2 sdl2-image glew --triplet x64-windows-static
     
-    - name: Debug: list vcpkg libraries
-      shell: powershell
-      run: |
-        $vcpkgLibDir  = ".\vcpkg\installed\x64-windows-static\lib"
-        Write-Host "=== Listing all .lib files in $vcpkgLibDir ==="
-        Get-ChildItem $vcpkgLibDir\*.lib | ForEach-Object { Write-Host $_.Name }
+      - name: Debug: list vcpkg libraries
+        shell: powershell
+        run: |
+          $vcpkgLibDir  = ".\vcpkg\installed\x64-windows-static\lib"
+          Write-Host "=== Listing all .lib files in $vcpkgLibDir ==="
+          Get-ChildItem $vcpkgLibDir\*.lib | ForEach-Object { Write-Host $_.Name }
 
       - uses: actions/upload-artifact@v4
         with:
