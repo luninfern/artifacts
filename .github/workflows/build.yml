@@ -81,26 +81,30 @@ jobs:
                   ForEach-Object { $_.FullName }
 
           $systemLibs = @(
-              "opengl32.lib",
-              "user32.lib",
-              "gdi32.lib",
-              "winmm.lib",
-              "shell32.lib",
-              "ole32.lib",
-              "oleaut32.lib",
-              "setupapi.lib",
-              "cfgmgr32.lib",
-              "uuid.lib",
-              "comctl32.lib",
-              "imm32.lib",
-              "version.lib",
-              "dinput8.lib",
-              "dxguid.lib"
+            "user32.lib",
+            "gdi32.lib",
+            "shell32.lib",
+            "ole32.lib",
+            "oleaut32.lib",
+            "advapi32.lib",
+            "winmm.lib",
+            "imm32.lib",
+            "version.lib",
+            "propsys.lib",
+            "setupapi.lib",
+            "cfgmgr32.lib",
+            "comdlg32.lib",
+            "shlwapi.lib",
+            "hid.lib",
+            "opengl32.lib",
+            "dinput8.lib",
+            "dxguid.lib",
+            "uuid.lib"
           )
 
           $allLibs = $vcpkgLibs + $systemLibs
 
-          cl /O2 /MD main.c /I ".\vcpkg\installed\x64-windows-static\include" /D GLEW_STATIC /D SDL_MAIN_HANDLED /link $($allLibs -join ' ') /OUT:demo-windows.exe
+          cl /O2 /MT main.c /I ".\vcpkg\installed\x64-windows-static\include" /D GLEW_STATIC /D SDL_MAIN_HANDLED /link $($allLibs -join ' ') /OUT:demo-windows.exe
 
       - uses: actions/upload-artifact@v4
         with:
