@@ -43,23 +43,34 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install vcpkg deps (static)
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: vcpkg/installed
+          key: vcpkg-installed-${{ runner.os }}-x64-windows-static-${{ hashFiles('**/build.yml') }}
+          restore-keys: |
+            vcpkg-installed-${{ runner.os }}-x64-windows-static-
+      - name: Setup vcpkg
         shell: powershell
         run: |
-          git clone https://github.com/microsoft/vcpkg
-          cd vcpkg
-          .\bootstrap-vcpkg.bat
-          .\vcpkg install assimp sdl2 sdl2-image glew --triplet x64-windows-static
-      - name: Build
-        shell: cmd
+          if (-not (Test-Path "vcpkg")) {
+            git clone https://github.com/microsoft/vcpkg
+            .\vcpkg\bootstrap-vcpkg.bat
+          }
+      - name: Install dependencies
+        shell: powershell
         run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          cl /O2 /MT main.c ^
-            /I vcpkg\installed\x64-windows-static\include ^
-            /link ^
-            /LIBPATH:vcpkg\installed\x64-windows-static\lib ^
-            assimp.lib SDL2.lib SDL2main.lib SDL2_image.lib glew32s.lib ^
-            opengl32.lib user32.lib gdi32.lib winmm.lib ^
+          .\vcpkg\vcpkg install assimp sdl2 sdl2-image glew --triplet x64-windows-static
+      - name: Build
+        shell: powershell
+        run: |
+          cl /O2 /MT main.c `
+            /I vcpkg\installed\x64-windows-static\include `
+            /link `
+            /LIBPATH:vcpkg\installed\x64-windows-static\lib `
+            assimp.lib SDL2.lib SDL2main.lib SDL2_image.lib glew32s.lib `
+            opengl32.lib user32.lib gdi32.lib winmm.lib `
             /OUT:demo-windows.exe
       - uses: actions/upload-artifact@v4
         with:
