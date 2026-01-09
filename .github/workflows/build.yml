@@ -100,11 +100,7 @@ jobs:
 
           $allLibs = $vcpkgLibs + $systemLibs
 
-          cl /O2 /MD main.c `
-             /I ".\vcpkg\installed\x64-windows-static\include" `
-             /D GLEW_STATIC /D SDL_MAIN_HANDLED `
-             /link $($allLibs -join ' ') `
-             /OUT:demo-windows.exe
+          cl /O2 /MD main.c /I ".\vcpkg\installed\x64-windows-static\include" /D GLEW_STATIC /D SDL_MAIN_HANDLED /link $($allLibs -join ' ') /OUT:demo-windows.exe
 
       - uses: actions/upload-artifact@v4
         with:
