@@ -1,0 +1,78 @@
+name: build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  linux-x86_64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: |
+          sudo apt update
+          sudo apt install -y gcc libassimp-dev libglew-dev libsdl2-dev libsdl2-image-dev
+          gcc main.c -o app-linux-x86_64 -lm -lassimp -lGL -lGLEW -lSDL2 -lSDL2_image
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-x86_64
+          path: app-linux-x86_64
+
+  linux-arm64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+
+      - run: |
+          docker run --rm \
+            -v "$PWD:/src" \
+            -w /src \
+            arm64v8/ubuntu:22.04 \
+            bash -c "
+              apt update &&
+              apt install -y gcc libassimp-dev libglew-dev libsdl2-dev libsdl2-image-dev &&
+              gcc main.c -o app-linux-arm64 -lm -lassimp -lGL -lGLEW -lSDL2 -lSDL2_image
+            "
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-arm64
+          path: app-linux-arm64
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          install: >
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-assimp
+            mingw-w64-x86_64-glew
+            mingw-w64-x86_64-SDL2
+            mingw-w64-x86_64-SDL2_image
+
+      - shell: msys2 {0}
+        run: |
+          gcc main.c -o app-windows.exe \
+            -static \
+            -static-libgcc \
+            -static-libstdc++ \
+            -lm \
+            -lassimp \
+            -lSDL2 \
+            -lSDL2_image \
+            -lglew32 \
+            -lopengl32 \
+            -luser32 \
+            -lgdi32 \
+            -lwinmm
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: app-windows.exe
