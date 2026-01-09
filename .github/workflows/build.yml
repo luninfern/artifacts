@@ -50,6 +50,16 @@ jobs:
           }
           .\vcpkg\vcpkg integrate install
 
+      - name: Cache vcpkg
+        uses: actions/cache@v3
+        with:
+          path: |
+            vcpkg
+            vcpkg\installed
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-
+
       - name: Install dependencies
         shell: powershell
         run: .\vcpkg\vcpkg install assimp sdl2 sdl2-image glew --triplet x64-windows-static
@@ -64,17 +74,34 @@ jobs:
       - name: Build
         shell: powershell
         run: |
-          $vcpkgInclude = ".\vcpkg\installed\x64-windows-static\include"
-          $vcpkgLibDir  = ".\vcpkg\installed\x64-windows-static\lib"
+          $vcpkgLibDir = ".\vcpkg\installed\x64-windows-static\lib"
 
           $libs = Get-ChildItem $vcpkgLibDir\*.lib |
                   Where-Object { $_.Name -notmatch "d\.lib$" } |
                   Sort-Object Name
 
-          $libs += "opengl32.lib","user32.lib","gdi32.lib","winmm.lib"
+          $systemLibs = @(
+              "opengl32.lib",
+              "user32.lib",
+              "gdi32.lib",
+              "winmm.lib",
+              "shell32.lib",
+              "ole32.lib",
+              "oleaut32.lib",
+              "setupapi.lib",
+              "cfgmgr32.lib",
+              "uuid.lib",
+              "comctl32.lib",
+              "imm32.lib",
+              "version.lib",
+              "dinput8.lib",
+              "dxguid.lib"
+          )
+
+          $libs += $systemLibs
 
           cl /O2 /MT main.c `
-             /I $vcpkgInclude `
+             /I ".\vcpkg\installed\x64-windows-static\include" `
              /D GLEW_STATIC /D SDL_MAIN_HANDLED `
              /link $($libs | ForEach-Object { "`"$($_.FullName)`"" }) `
              /OUT:demo-windows.exe
