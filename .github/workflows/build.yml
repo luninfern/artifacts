@@ -61,6 +61,24 @@ jobs:
           Write-Host "=== Listing all .lib files in $vcpkgLibDir ==="
           Get-ChildItem $vcpkgLibDir\*.lib | ForEach-Object { Write-Host $_.Name }
 
+      - name: Build
+        shell: powershell
+        run: |
+          $vcpkgInclude = ".\vcpkg\installed\x64-windows-static\include"
+          $vcpkgLibDir  = ".\vcpkg\installed\x64-windows-static\lib"
+
+          $libs = Get-ChildItem $vcpkgLibDir\*.lib |
+                  Where-Object { $_.Name -notmatch "d\.lib$" } |
+                  Sort-Object Name
+
+          $libs += "opengl32.lib","user32.lib","gdi32.lib","winmm.lib"
+
+          cl /O2 /MT main.c `
+             /I $vcpkgInclude `
+             /D GLEW_STATIC /D SDL_MAIN_HANDLED `
+             /link $($libs | ForEach-Object { "`"$($_.FullName)`"" }) `
+             /OUT:demo-windows.exe
+
       - uses: actions/upload-artifact@v4
         with:
           name: windows
