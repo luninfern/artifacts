@@ -35,57 +35,57 @@ jobs:
         with:
           name: linux-arm64
           path: demo-linux-arm64
-windows:
-  runs-on: windows-latest
-  steps:
-    - uses: actions/checkout@v4
-    - uses: ilammy/msvc-dev-cmd@v1
-    - name: Cache vcpkg
-      id: cache-vcpkg
-      uses: actions/cache@v4
-      with:
-        path: vcpkg/installed
-        key: vcpkg-installed-${{ runner.os }}-x64-windows-static-${{
-          hashFiles('**/build.yml') }}
-        restore-keys: |
-          vcpkg-installed-${{ runner.os }}-x64-windows-static-
-    - name: Setup vcpkg
-      shell: powershell
-      run: |
-        if (-not (Test-Path "vcpkg")) {
-          git clone https://github.com/microsoft/vcpkg
-          .\vcpkg\bootstrap-vcpkg.bat
-        }
-    - name: Install dependencies
-      shell: powershell
-      run: >
-        .\vcpkg\vcpkg install assimp sdl2 sdl2-image glew --triplet
-        x64-windows-static
-    - name: Cache compiled binary
-      id: cache-binary
-      uses: actions/cache@v4
-      with:
-        path: demo-windows.exe
-        key: demo-windows-${{ hashFiles('**/main.c') }}
-        restore-keys: demo-windows-
-    - name: Build
-      shell: powershell
-      if: steps.cache-binary.outputs.cache-hit != 'true'
-      run: >
-        $libPath = (Resolve-Path ".\vcpkg\installed\x64-windows-static\lib").Path
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Cache vcpkg
+        id: cache-vcpkg
+        uses: actions/cache@v4
+        with:
+          path: vcpkg/installed
+          key: vcpkg-installed-${{ runner.os }}-x64-windows-static-${{
+            hashFiles('**/build.yml') }}
+          restore-keys: |
+            vcpkg-installed-${{ runner.os }}-x64-windows-static-
+      - name: Setup vcpkg
+        shell: powershell
+        run: |
+          if (-not (Test-Path "vcpkg")) {
+            git clone https://github.com/microsoft/vcpkg
+            .\vcpkg\bootstrap-vcpkg.bat
+          }
+      - name: Install dependencies
+        shell: powershell
+        run: >
+          .\vcpkg\vcpkg install assimp sdl2 sdl2-image glew --triplet
+          x64-windows-static
+      - name: Cache compiled binary
+        id: cache-binary
+        uses: actions/cache@v4
+        with:
+          path: demo-windows.exe
+          key: demo-windows-${{ hashFiles('**/main.c') }}
+          restore-keys: demo-windows-
+      - name: Build
+        shell: powershell
+        if: steps.cache-binary.outputs.cache-hit != 'true'
+        run: >
+          $libPath = (Resolve-Path ".\vcpkg\installed\x64-windows-static\lib").Path
 
-        $includePath = (Resolve-Path ".\vcpkg\installed\x64-windows-static\include").Path
-        $libs = Get-ChildItem $libPath -Filter *.lib | ForEach-Object { $_.Name } | Sort-Object
-        $libString = [string]::Join(" ", $libs)
+          $includePath = (Resolve-Path ".\vcpkg\installed\x64-windows-static\include").Path
+          $libs = Get-ChildItem $libPath -Filter *.lib | ForEach-Object { $_.Name } | Sort-Object
+          $libString = [string]::Join(" ", $libs)
 
-        cl /O2 /MT main.c `
-          /I $includePath `
-          /link `
-          /LIBPATH:$libPath `
-          $libString `
-          opengl32.lib user32.lib gdi32.lib winmm.lib `
-          /OUT:demo-windows.exe
-    - uses: actions/upload-artifact@v4
-      with:
-        name: windows
-        path: demo-windows.exe
+          cl /O2 /MT main.c `
+            /I $includePath `
+            /link `
+            /LIBPATH:$libPath `
+            $libString `
+            opengl32.lib user32.lib gdi32.lib winmm.lib `
+            /OUT:demo-windows.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: demo-windows.exe
