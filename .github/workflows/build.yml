@@ -39,7 +39,6 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: ilammy/msvc-dev-cmd@v1
 
       - name: Setup vcpkg
@@ -53,16 +52,34 @@ jobs:
 
       - name: Install dependencies
         shell: powershell
-        run: |
-          .\vcpkg\vcpkg install assimp sdl2 sdl2-image glew --triplet x64-windows-static
+        run: .\vcpkg\vcpkg install assimp sdl2 sdl2-image glew --triplet x64-windows-static
 
       - name: Build
         shell: powershell
         run: |
-          cl /O2 /MT main.c /I .\vcpkg\installed\x64-windows-static\include `
-            /link `
-            assimp.lib SDL2.lib SDL2main.lib SDL2_image.lib glew32s.lib opengl32.lib user32.lib gdi32.lib winmm.lib `
-            /OUT:demo-windows.exe
+          $vcpkgInclude = ".\vcpkg\installed\x64-windows-static\include"
+          $vcpkgLibDir  = ".\vcpkg\installed\x64-windows-static\lib"
+
+          $assimpLib = Get-ChildItem $vcpkgLibDir\assimp*.lib | Select-Object -First 1
+          if (-not $assimpLib) { exit 1 }
+
+          $libs = @(
+            "`"$($assimpLib.FullName)`"",
+            "`"$vcpkgLibDir\SDL2.lib`"",
+            "`"$vcpkgLibDir\SDL2main.lib`"",
+            "`"$vcpkgLibDir\SDL2_image.lib`"",
+            "`"$vcpkgLibDir\glew32s.lib`"",
+            "opengl32.lib",
+            "user32.lib",
+            "gdi32.lib",
+            "winmm.lib"
+          )
+
+          cl /O2 /MT main.c `
+             /I $vcpkgInclude `
+             /D GLEW_STATIC /D SDL_MAIN_HANDLED `
+             /link /LIBPATH:$vcpkgLibDir $libs `
+             /OUT:demo-windows.exe
 
       - uses: actions/upload-artifact@v4
         with:
