@@ -31,7 +31,7 @@ jobs:
 
       - name: Install dependencies
         shell: powershell
-        run: .\vcpkg\vcpkg install sdl2 sdl2-image glew --triplet x64-windows-static
+        run: .\vcpkg\vcpkg install assimp sdl2 sdl2-image glew --triplet x64-windows-static
     
       - name: List vcpkg libraries
         shell: powershell
