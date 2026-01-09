@@ -76,34 +76,20 @@ jobs:
         run: |
           $vcpkgLibDir = ".\vcpkg\installed\x64-windows-static\lib"
 
-          $libs = Get-ChildItem $vcpkgLibDir\*.lib |
+          $libs = Get-ChildItem "$vcpkgLibDir\*.lib" |
                   Where-Object { $_.Name -notmatch "d\.lib$" } |
                   Sort-Object Name
 
-          $systemLibs = @(
-              "opengl32.lib",
-              "user32.lib",
-              "gdi32.lib",
-              "winmm.lib",
-              "shell32.lib",
-              "ole32.lib",
-              "oleaut32.lib",
-              "setupapi.lib",
-              "cfgmgr32.lib",
-              "uuid.lib",
-              "comctl32.lib",
-              "imm32.lib",
-              "version.lib",
-              "dinput8.lib",
-              "dxguid.lib"
-          )
-
-          $libs += $systemLibs
+          $libPaths = ($libs | ForEach-Object { "`"$($_.FullName)`"" }) -join " "
 
           cl /O2 /MT main.c `
              /I ".\vcpkg\installed\x64-windows-static\include" `
              /D GLEW_STATIC /D SDL_MAIN_HANDLED `
-             /link $($libs | ForEach-Object { "`"$($_.FullName)`"" }) `
+             /link `
+             $libPaths `
+             user32.lib gdi32.lib winmm.lib shell32.lib ole32.lib oleaut32.lib `
+             setupapi.lib cfgmgr32.lib uuid.lib comctl32.lib imm32.lib version.lib `
+             dinput8.lib dxguid.lib kernel32.lib advapi32.lib comdlg32.lib shlwapi.lib `
              /OUT:demo-windows.exe
 
       - uses: actions/upload-artifact@v4
